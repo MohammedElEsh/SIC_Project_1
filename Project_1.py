@@ -1,277 +1,266 @@
 import json
-file = open ("Project_1_json.json","r")  # read data
-All_List_In_Bank = json.load(file)
-file.close()
+
+class User:
+    def __init__(self, user_id, name, password, phone, email, gender, age, city, balance=0):
+        self.user_id = user_id
+        self.name = name
+        self.password = password
+        self.phone = phone
+        self.email = email
+        self.gender = gender
+        self.age = age
+        self.city = city
+        self.balance = balance
+
+    def to_dict(self):
+        return {
+            "ID": self.user_id,
+            "Name": self.name,
+            "Password": self.password,
+            "Phone number": self.phone,
+            "Mail": self.email,
+            "Gender": self.gender,
+            "Age": self.age,
+            "City": self.city,
+            "Balance": self.balance
+        }
+
+class BankAccount:
+    def __init__(self, user):
+        self.user = user
+
+    def deposit(self, amount, currency, currency_rates):
+        if currency in currency_rates:
+            amount *= currency_rates[currency]
+            self.user.balance += amount
+            return True, amount
+        return False, 0
+
+    def withdraw(self, amount, currency, currency_rates):
+        if currency in currency_rates:
+            amount *= currency_rates[currency]
+            if amount <= self.user.balance:
+                self.user.balance -= amount
+                return True, amount
+        return False, 0
+
+    def transfer(self, amount, recipient):
+        if amount <= self.user.balance:
+            self.user.balance -= amount
+            recipient.balance += amount
+            return True
+        return False
+
+class Transaction:
+    @staticmethod
+    def log_transaction(user_id, transaction_type, amount, currency, from_user=None, to_user=None):
+        transaction = {
+            "UserID": user_id,
+            "Type": transaction_type,
+            "Amount": amount,
+            "Currency": currency
+        }
+
+        if to_user is not None:
+            transaction["To ID"] = to_user
+        with open("transactions_log.json", "a") as log_file:
+            json.dump(transaction, log_file)
+            log_file.write("\n")
+
+# Function to load data from JSON file
+def load_data():
+    with open("Project_1_json.json", "r") as file:
+        return [User(user_id=user['ID'], name=user['Name'], password=user['Password'], phone=user['Phone number'],
+                    email=user['Mail'], gender=user['Gender'], age=user['Age'], city=user['City'], balance=user['Balance'])
+                for user in json.load(file)]
+
+# Function to save data to JSON file
+def save_data(users):
+    with open("Project_1_json.json", "w") as file:
+        json.dump([user.to_dict() for user in users], file, indent=2)
+
+# Load users
+database = load_data()
+
+def get_int_input(prompt):
+    while True:
+        try:
+            return int(input(prompt))
+        except ValueError:
+            print("Invalid input. Please enter a number.")
 
 
+def get_float_input(prompt):
+    while True:
+        try:
+            return float(input(prompt))
+        except ValueError:
+            print("Invalid input. Please enter a valid amount.")
 
+# Function to validate name
+def is_valid_name(name):
+    return name.isalpha()
 
+# Function to validate password
+def is_valid_password(password):
+    return len(password) >= 8
+
+# Function to validate phone number
+def is_valid_phone_number(phone):
+    return len(str(phone)) >= 11
 
 repeat = True
 while repeat:
-
-    print('\n','*'*84 ,"Welcome to SIC bank management",'*'*84,'\n')
-    print("If you don't have an account enter [register]")
-    print("If you already have an account please enter [login]",'\n')
+    print('\n', '*'*5, "Welcome to SIC Bank Management System", '*'*5, '\n')
+    print("To create a new account, please type [register]")
+    print("To access your existing account, please type [login]")
+    print("To access admin panel, please type [admin]", '\n')
 
     user_sign = input('Enter : ').lower().strip()
 
-
-# login
+    # login
     if user_sign == 'login':
-        print('*'*20 ,"Welcome to login page",'*'*20)
+        print('*'*20, "Login Page", '*'*20)
 
+        user_logined_id = get_int_input('Please enter your User ID: ')
+        user_logined_ps = input('Please enter your Password: ').strip()
 
+        user = next((u for u in database if u.user_id == user_logined_id and u.password == user_logined_ps), None)
 
-        file = open ("Project_1_json.json","r") 
-        data = json.load(file)
-
-
-
-        user_logined_id = int(input('Enter your ID : '))
-        user_logined_ps = input('Enter your password : ').strip()
-
-        my_index = user_logined_id -1
-
-        # for All_List_In_Bank[my_index] in All_List_In_Bank :
-        if len(All_List_In_Bank)>= user_logined_id:
-            if All_List_In_Bank[my_index]['ID'] == user_logined_id and All_List_In_Bank[my_index]['Password'] == user_logined_ps:
-                repeat = False
-                    
-                # print(All_List_In_Bank[my_index])
-                print('Welcome back' , All_List_In_Bank[my_index]['Name']) 
-
-
-
-            else:
-                print("Wrong ID or PS")
-                repeat = True
-                # break
-
+        if user:
+            repeat = False
+            print(f'Welcome back, {user.name}!')
+            account = BankAccount(user)
         else:
-            print("User not found!  You must register first!")
+            print("Incorrect User ID or Password. Please try again.")
 
-            
-        file.close()
-
-            
-        
-# register
+    # register
     elif user_sign == 'register':
-        repeat = True
+        print('*' * 20, "Registration Page", '*' * 20)
 
-        print('*' * 20, "Welcome to sign up page", '*' * 20)
+        while True:
+            user_signed_name = input('Enter your full name: ').strip().capitalize()
+            if not is_valid_name(user_signed_name):
+                print("Invalid name. Please enter alphabetic characters only.")
+                continue
 
-        file = open('Project_1_json.json' , 'r')
-        All_List_In_Bank = json.load(file)
-        # print(All_List_In_Bank)
+            user_signed_ps = input('Create a password: ').strip()
+            if not is_valid_password(user_signed_ps):
+                print("Password must be at least 8 characters long.")
+                continue
 
+            user_signed_num = get_int_input('Enter your phone number: ')
+            if not is_valid_phone_number(user_signed_num):
+                print("Phone number must be at least 11 digits long.")
+                continue
 
-        user_signed_name = input('Please enter your name : ').strip().capitalize()
-        user_signed_ps = input('Please enter your password : ').strip()
-        user_signed_num = int(input('Please enter your phone number : '))
-        user_signed_mail = input('Please enter your mail : ').strip()
-        user_signed_gender = input('Please enter your gender : ').strip().capitalize()
-        user_signed_age = int(input('Please enter your age : '))
-        user_signed_city = input('Please enter your city : ').strip().capitalize()
+            user_signed_mail = input('Enter your email address: ').strip()
+            user_signed_gender = input('Enter your gender: ').strip().capitalize()
+            user_signed_age = get_int_input('Enter your age: ')
+            user_signed_city = input('Enter your city of residence: ').strip().capitalize()
 
+            new_ID = database[-1].user_id + 1 if database else 1
+            new_user = User(new_ID, user_signed_name, user_signed_ps, user_signed_num, user_signed_mail, user_signed_gender, user_signed_age, user_signed_city)
 
+            database.append(new_user)
+            save_data(database)
 
+            print(f'Registration successful! Your User ID is {new_ID}. You are now logged in.')
+            account = BankAccount(new_user)
+            repeat = False
+            break
 
-        ID = All_List_In_Bank[-1]['ID']
-        new_ID = ID +1
-        User_All_List_In_Bank={"ID": new_ID ,
-                               "Name": user_signed_name,
-                               "Password": user_signed_ps,
-                               "Phone number": user_signed_num,
-                               "Mail": user_signed_mail,
-                               "Gender": user_signed_gender,
-                               "Age": user_signed_age,
-                               "City": user_signed_city,
-                               "Balance": 0}
+    # admin
+    elif user_sign == 'admin':
+        print('*' * 20, "Admin Panel", '*' * 20)
+        try:
+            with open("transactions_log.json", "r") as log_file:
+                transactions = log_file.readlines()
+                if transactions:
+                    print("Transaction Log:")
+                    for transaction in transactions:
+                        print(transaction.strip())
+                else:
+                    print("No transactions found.")
+        except FileNotFoundError:
+            print("Transaction log file not found.")
 
-        All_List_In_Bank.append(User_All_List_In_Bank)
-
-
-
-        file = open("Project_1_json.json", "w")  
-        json.dump(All_List_In_Bank,file,indent=2)
-        file.close()
-
-
-        print('sign up successful , your ID is',new_ID)  
-
-
-# nor
     else:
-        repeat = True
-        print("Not Avaliable")
-        
+        print("Invalid option. Please type [register], [login], or [admin].")
 
-    continue
-
-
-
-
-
-
-# menu 
-user_balance = 0
+# menu
 while True:
+    print("Please select an option from the menu below:")
+    print('[0] Deposit Funds')
+    print('[1] Withdraw Funds')
+    print('[2] Transfer Funds')
+    print('[3] View Account Details')
+    print('[4] Exit')
 
-    print("Please Enter your choice")   
+    user_op_num = get_int_input('Enter the number corresponding to your choice: ')
 
-    print('[0]Deposit')  
-    print('[1]Withdraw')  
-    print('[2]Transfer')  
-    print('[3]Check balance & personal info')  
-    print('[4]Exit') 
-
-    user_op_num = int(input('Enter operation you want :')) 
-
-
-#deposite
+    # deposit
     if user_op_num == 0:
+        print(f"Your current balance is {account.user.balance} EGP.")
+        user_deposite = get_float_input('Enter the amount you wish to deposit: ')
+        currency = input('Enter the currency type (e.g., EGP): ').strip().upper()
 
-    
-        print("Your balance is " ,All_List_In_Bank[my_index]['Balance'] , "EGP")   
-        print("Please enter the amount you want to deposite: ")
+        currency_rates = {"USD": 30, "SAR": 9, "EGP": 1}
 
-        user_deposite = float(input('Enter your amount of money: '))
-        currency = input('Enter currency type in this form EGP : ').strip().upper()
-
-        currency_rates = {"USD": 30,
-                          "SAR": 9,
-                          "EGP": 1}
-        
-
-
-# calculating                 
-        if currency in currency_rates:
-            print(user_deposite , currency , "was deposited successfully!!" )
-            user_deposite *= currency_rates.get(currency)
-            user_balance += user_deposite
-            user_balance += All_List_In_Bank[my_index]['Balance']
-            
-            All_List_In_Bank[my_index]['Balance'] += user_deposite
-            print("Your balance is " ,All_List_In_Bank[my_index]['Balance'] , "EGP")   #user_balance + user_deposite         
-
-            file = open ('Project_1_json.json','w')
-            json.dump(All_List_In_Bank , file , indent=2)
-
-            file.close()
-
-
-            
-
+        success, amount = account.deposit(user_deposite, currency, currency_rates)
+        if success:
+            save_data(database)
+            Transaction.log_transaction(account.user.user_id, "Deposit", amount, currency)
+            print(f"Deposit successful! Your new balance is {account.user.balance} EGP.")
         else:
-            print("Invalid currency entered")
+            print("Invalid currency entered. Please try again.")
 
-
-
-
-
-#withdraw
+    # withdraw
     elif user_op_num == 1:
+        print(f"Your current balance is {account.user.balance} EGP.")
+        user_withdraw = get_float_input('Enter the amount you wish to withdraw: ')
+        currency = input('Enter the currency type (e.g., EGP): ').strip().upper()
 
-        print("Your balance is " ,All_List_In_Bank[my_index]['Balance'] , "EGP")   
-        print("Please enter the amount you want to withdraw: ")
-        
-        user_withdraw = float(input('Enter your amount of money: ')) 
-        currency = input('Enter currency type in this form EGP : ').strip().upper() 
+        currency_rates = {"USD": 30, "SAR": 9, "EGP": 1}
 
-        currency_rates = {"USD": 30,
-                          "SAR": 9,
-                          "EGP": 1}
-        
-
-
-# calculating                 
-        if currency in currency_rates:
-            if user_withdraw * currency_rates.get(currency) <= All_List_In_Bank[user_logined_id - 1]['Balance']:            
-                print(user_withdraw , currency , "was withdrawn successfully!!" )
-                user_withdraw *= currency_rates.get(currency)
-                user_balance -= user_withdraw
-                user_balance -= All_List_In_Bank[my_index]['Balance']
-                
-                All_List_In_Bank[my_index]['Balance'] -= user_withdraw
-                print("Your balance is " ,All_List_In_Bank[my_index]['Balance'] , "EGP")   #user_balance - user_withdraw
-            else:
-                print("Your money isn't enough!")
+        success, amount = account.withdraw(user_withdraw, currency, currency_rates)
+        if success:
+            save_data(database)
+            Transaction.log_transaction(account.user.user_id, "Withdraw", amount, currency)
+            print(f"Withdrawal successful! Your new balance is {account.user.balance} EGP.")
         else:
-            print("Invalid currency entered")
+            print("Invalid currency entered or insufficient funds. Please try again.")
 
-
-        file = open ('Project_1_json.json','w')
-        json.dump(All_List_In_Bank , file , indent=2)
-        file.close()
-
-
-
-
-
-
-#transfer
+    # transfer
     elif user_op_num == 2:
-        # for items in All_List_In_Bank:
-        
-        user_amount = float(input("please enter the amount.you want to transfer in EGP : "))
-        user_id = int(input("please enter the id of the account you want to transfer money to : "))
+        print(f"Your current balance is {account.user.balance} EGP.")
+        user_amount = get_float_input("Enter the amount you wish to transfer in EGP: ")
+        user_id = get_int_input("Enter the User ID of the recipient: ")
 
-        
-        file = open('Project_1_json.json' , 'r')
-        All_List_In_Bank = json.load(file)
-        
-        # if user_id in All_List_In_Bank:
-        if len(All_List_In_Bank)>= user_id:
-            if user_amount <= All_List_In_Bank[user_logined_id - 1]['Balance']:
+        recipient = next((u for u in database if u.user_id == user_id), None)
 
-            
-                new_balance_1 = All_List_In_Bank[user_logined_id - 1]['Balance'] - user_amount 
-                new_balance_2 = All_List_In_Bank[user_id-1]['Balance'] + user_amount 
-
-                All_List_In_Bank[user_logined_id - 1]['Balance'] = new_balance_1
-                All_List_In_Bank[user_id - 1]['Balance'] = new_balance_2
-                
-                print("Done!")
-                print("Your balance become " ,new_balance_1 , "EGP")
-                print(All_List_In_Bank[user_id - 1]['Name'], "balance become " ,new_balance_2 , "EGP")
-
+        if recipient:
+            success = account.transfer(user_amount, recipient)
+            if success:
+                save_data(database)
+                Transaction.log_transaction(account.user.user_id, "Transfer", user_amount, "EGP", from_user=account.user.user_id, to_user=recipient.user_id)
+                print(f"Transfer successful! Your new balance is {account.user.balance} EGP.")
             else:
-                print("Your money isn't enough!")
-
+                print("Insufficient funds for this transfer. Please try again.")
         else:
-                print("User not found!")
+            print("Recipient not found. Please check the User ID and try again.")
 
-
-        file = open("Project_1_json.json", "w")  
-        json.dump(All_List_In_Bank,file,indent=2)
-        file.close()
-
-    
-    
-
-# info
+    # info
     elif user_op_num == 3:
-        my_index = user_logined_id -1
-        print(All_List_In_Bank[my_index])
+        print("Here are your account details:")
+        for key, value in account.user.to_dict().items():
+            print(f"{key}: {value}")
 
-        for key in All_List_In_Bank[my_index]:
-            print(key ,":", All_List_In_Bank[my_index][key])
-
-
-
-#exit
+    # exit
     elif user_op_num == 4:
-        print("Program exited")
+        print("Thank you for using the Bank Management System. Goodbye!")
         break
 
-
-
-
-
-
-# wrong operation    
     else:
-        print("Invalid operation")
+        print("Invalid selection. Please choose a valid option from the menu.")
         
