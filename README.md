@@ -36,6 +36,7 @@ SIC_Project_1/
 
 ---
 
+
 ## 🚀 How to Run
 
 ### ▶️ Option 1: Run with Python
