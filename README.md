@@ -19,6 +19,7 @@ It supports user registration, login, deposits, withdrawals, transfers, multi-cu
 - 💾 Data stored in a JSON database (`Project_1_json.json`)
 - 🪄 `.exe` version included for easy access
 
+
 ---
 
 ## 🧱 Project Structure
